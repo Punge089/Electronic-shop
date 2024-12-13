@@ -705,6 +705,7 @@ void ownerscreen()
 
             break;
         case 5: // return menu
+            system("cls");
             return;
             break;
         default:
@@ -987,6 +988,7 @@ void buyNow() {
     }
 }
 
+void mainmenu();
 
 void customerPage()
 {
@@ -1012,8 +1014,9 @@ void customerPage()
             manageCart();
             break;
         case 3:
-            printf("Returning to Main Menu...\n");
-            return;
+            system("cls");
+            mainmenu();
+            break;
         default:
             printf("Invalid choice! Please try again.\n");
         }
@@ -1058,6 +1061,5 @@ int main(void)
 
     readfile();
     readCoupons();
-
     mainmenu();
 }
