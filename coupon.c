@@ -25,6 +25,7 @@ void manageCoupons() {
                 float discountPercentage;
                 int isDuplicate = 0;
 
+                // Generate random coupon code
                 const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
                 for (int i = 0; i < 4; i++) {
                     code[i] = charset[rand() % (sizeof(charset) - 1)];
@@ -34,6 +35,7 @@ void manageCoupons() {
 
                 printf("Generated Coupon Code: %s\n", finalCode);
 
+                // Check for duplicates in the file
                 file = fopen(filename, "r");
                 if (file != NULL) {
                     while (fgets(buffer, sizeof(buffer), file) != NULL) {
@@ -52,6 +54,7 @@ void manageCoupons() {
                     break;
                 }
 
+                // Get user input for discount and expiration date
                 printf("Enter Discount Percentage: ");
                 scanf("%f", &discountPercentage);
                 printf("Enter Expiration Date (YYYY.MM.DD): ");
@@ -73,6 +76,7 @@ void manageCoupons() {
                     break;
                 }
 
+                // Append new coupon to the file
                 file = fopen(filename, "a");
                 if (file == NULL) {
                     printf("Error: Could not open file.\n");
