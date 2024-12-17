@@ -1,0 +1,31 @@
+Class,ID,Name,Quantity,Price,Description,Threshold,Max
+F,1,Smartphone,12,24500.00,High-end smartphone with OLED display and 5G.,30.00,50
+A,2,Laptop,28,35000.00,Powerful laptop with 16GB RAM and 1TB SSD.,30.00,50
+A,3,Bluetooth Speaker,34,1750.00,Portable Bluetooth speaker with 10-hour battery life.,30.00,50
+A,4,Smartwatch,34,7000.00,Feature-rich smartwatch with heart rate monitoring.,30.00,50
+A,5,Wireless Earbuds,22,2800.00,Noise-cancelling wireless earbuds with charging case.,30.00,50
+A,6,Tablet,26,14000.00,10-inch tablet with stylus support and 64GB storage.,30.00,50
+A,7,Gaming Console,41,17500.00,Next-gen gaming console with 4K resolution support.,30.00,50
+A,8,Smart TV,32,24500.00,55-inch 4K Ultra HD smart TV with HDR.,30.00,50
+A,9,External Hard Drive,6,3150.00,2TB external hard drive with USB 3.0 support.,30.00,50
+A,10,Digital Camera,28,21000.00,DSLR camera with 24.2MP resolution and WiFi connectivity.,30.00,50
+A,11,Wireless Mouse,9,1050.00,Ergonomic wireless mouse with adjustable DPI.,30.00,50
+A,12,Keyboard,24,1750.00,Mechanical keyboard with RGB backlighting.,30.00,50
+A,13,Smart Light,22,1050.00,WiFi-enabled smart light bulb with adjustable brightness.,30.00,50
+A,14,Fitness Tracker,15,3500.00,Fitness tracker with sleep and activity monitoring.,30.00,50
+A,15,Streaming Stick,15,1750.00,Streaming stick with 4K HDR support.,30.00,50
+A,16,Robot Vacuum,48,10500.00,Smart robot vacuum with app control.,30.00,50
+A,17,Electric Scooter,22,17500.00,Foldable electric scooter with 25-mile range.,30.00,50
+A,18,Portable Charger,28,875.00,10000mAh portable charger with fast charging.,30.00,50
+A,19,Air Purifier,29,4550.00,HEPA air purifier for home use.,30.00,50
+A,20,Drone,13,28000.00,High-end drone with 4K camera and GPS.,30.00,50
+A,21,Electric Kettle,40,1400.00,Electric kettle with temperature control.,30.00,50
+A,22,Microwave,28,4200.00,Compact microwave oven with smart settings.,30.00,50
+A,23,Smart Doorbell,41,5250.00,Smart doorbell with video recording and two-way audio.,30.00,50
+A,24,Coffee Maker,19,3150.00,Programmable coffee maker with built-in grinder.,30.00,50
+A,25,Electric Toothbrush,47,1750.00,Rechargeable electric toothbrush with multiple modes.,30.00,50
+A,26,Smart Thermostat,35,7000.00,WiFi-enabled smart thermostat for home automation.,30.00,50
+A,27,VR Headset,28,14000.00,Virtual reality headset with motion controllers.,30.00,50
+A,28,Soundbar,45,4550.00,High-quality soundbar with Dolby Atmos support.,30.00,50
+A,29,Desktop PC,23,45500.00,Desktop PC with 32GB RAM and RTX 3070 GPU.,30.00,50
+A,30,Webcam,41,2100.00,1080p HD webcam with noise-cancelling microphone.,30.00,50
