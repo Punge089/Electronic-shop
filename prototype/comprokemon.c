@@ -121,32 +121,6 @@ void savefile();
 
 void writeLog();
 
-void autoBuy() {
-    int restocked = 0;
-    char logDetails[1024] = "Restocked items ";
-
-    for (int i = 0; i < amount; i++) {
-        if (stock[i].quantity < stock[i].threshold) {
-            stock[i].quantity = stock[i].max;  // Restock the product to max
-            restocked++;
-
-            // Log the restocked product (ID and Name)
-            char productDetails[256];
-            sprintf(productDetails, "ID: %d, Name: %s, ", stock[i].id, stock[i].name);
-            strcat(logDetails, productDetails);
-        }
-    }
-
-    if (restocked > 0) {
-        savefile();
-        printf("[Auto Buy] Restocked %d items automatically.\n", restocked);
-        // Write the log after restocking
-        writeLog("Auto Buy", logDetails);
-    } else {
-        printf("[Auto Buy] No items needed restocking.\n");
-    }
-}
-
 void viewSchedule() {
     const char *daysOfWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
     if (accountamount == 0) {
@@ -1086,10 +1060,16 @@ void checkLowStockAndRestock() {
                 scanf("%d", &quantityToAdd);
 
                 if (quantityToAdd > 0) {
+                    int originalQuantity = stock[productIndex].quantity;
                     stock[productIndex].quantity += quantityToAdd;
 
+                    // Log the restock action including the quantity added
+                    char logDetails[256];
+                    sprintf(logDetails, "Restocked Product: %s | Quantity Added: %d | New Quantity: %d",
+                            stock[productIndex].name, quantityToAdd, stock[productIndex].quantity);
+                    writeLog("Stock Restock", logDetails);
+
                     printf("✅ Stock updated successfully!\n");
-                    writeLog("Stock Restock", stock[productIndex].name);
                     savefile();
 
                     // Check if the updated stock now exceeds the threshold
@@ -1109,6 +1089,7 @@ void checkLowStockAndRestock() {
         }
     }
 }
+
 
 
 void manageCoupons() {
@@ -1838,7 +1819,6 @@ void customerPage()
 }
 
 void mainmenu() {
-    autoBuy(); // Automatically restock items when entering the main menu
     printmainmenu();
 
     int choice;
