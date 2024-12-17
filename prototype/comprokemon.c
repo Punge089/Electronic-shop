@@ -38,7 +38,137 @@ int icart=0;
 char temp[ARRAYVALUE];
 int tempy[ARRAYVALUE];
 
+time_t now;
 int amount,i;
+
+double totalIncome = 0.0;
+char logDetails[256]; // Allocate enough space for the formatted string
+
+// Function to log actions to a file
+void writeLog(const char *action, const char *details) {
+    FILE *logFile = fopen("log.txt", "a");
+    if (logFile == NULL) {
+        printf("Error: Could not open log file.\n");
+        return;
+    }
+
+    // Get the current time
+    time_t now = time(NULL);
+    struct tm *localTime = localtime(&now);
+
+    // Write the log entry to the file
+    fprintf(logFile, "[%04d-%02d-%02d %02d:%02d:%02d] %s: %s\n",
+            localTime->tm_year + 1900, localTime->tm_mon + 1, localTime->tm_mday,
+            localTime->tm_hour, localTime->tm_min, localTime->tm_sec,
+            action, details);
+
+    // Close the file
+    fclose(logFile);
+
+    // Provide feedback to the user that the log has been written
+    printf("Log entry written successfully: [%04d-%02d-%02d %02d:%02d:%02d] %s: %s\n",
+            localTime->tm_year + 1900, localTime->tm_mon + 1, localTime->tm_mday,
+            localTime->tm_hour, localTime->tm_min, localTime->tm_sec,
+            action, details);
+}
+
+// Save purchase history and log purchases
+void savePurchaseHistory(const char *purchasedItems, double totalPrice, double discountAmount) {
+    FILE *historyFile = fopen("purchase_history.csv", "a");
+    if (historyFile == NULL) {
+        printf("Error opening purchase history file.\n");
+        return;
+    }
+
+    fprintf(historyFile, "\"%s\",%.2lf,%.2lf\n", purchasedItems, totalPrice, discountAmount);
+    fclose(historyFile);
+
+    // Log the purchase
+    char logDetails[500];
+    sprintf(logDetails, "Items: %s", purchasedItems);
+    writeLog("Customer Purchase", logDetails);
+
+    // Update total income
+    totalIncome += totalPrice;
+}
+
+// View report system
+void viewReport() {
+    system("cls");
+    printf("========== View Report ==========\n");
+
+    FILE *historyFile = fopen("purchase_history.csv", "r");
+    if (historyFile == NULL) {
+        printf("No purchase history found.\n");
+        writeLog("Report Error", "No purchase history available");
+        return;
+    }
+
+    char buffer[500];
+    char items[1000];
+    double totalPrice, discountAmount;
+    double totalSales = 0.0, averageSales = 0.0;
+    int transactionCount = 0;
+    int productSales[ARRAYVALUE] = {0}; // To track quantity sold per product
+
+    while (fgets(buffer, sizeof(buffer), historyFile)) {
+        if (sscanf(buffer, "\"%[^\"]\",%lf,%lf", items, &totalPrice, &discountAmount) == 3) {
+            totalSales += totalPrice;
+            transactionCount++;
+
+            // Parse items and update product sales
+            char *token = strtok(items, ",");
+            while (token != NULL) {
+                for (int i = 0; i < amount; i++) {
+                    if (strstr(token, stock[i].name)) {
+                        int qty = 0;
+                        sscanf(token, "%*s x%d", &qty);
+                        productSales[i] += qty;
+                        break;
+                    }
+                }
+                token = strtok(NULL, ",");
+            }
+        }
+    }
+
+    fclose(historyFile);
+
+    // Find the most sold product
+    int maxSoldIndex = 0;
+    for (int i = 1; i < amount; i++) {
+        if (productSales[i] > productSales[maxSoldIndex]) {
+            maxSoldIndex = i;
+        }
+    }
+
+    // Calculate average sales
+    if (transactionCount > 0) {
+    averageSales = totalSales / transactionCount;
+    } else {
+    averageSales = 0;
+    }
+
+    // Display Report
+    printf("\n--- Daily Summary ---\n");
+    printf("Total Sales: %.2lf\n", totalSales);
+    printf("Total Transactions: %d\n", transactionCount);
+    printf("Average Transaction Value: %.2lf\n", averageSales);
+
+    printf("\n--- Most Sold Product ---\n");
+    printf("Product: %s, Quantity Sold: %d\n", stock[maxSoldIndex].name, productSales[maxSoldIndex]);
+
+    // Log report generation
+    writeLog("Report", "Daily Summary");
+
+    // Prompt user to exit
+    printf("\nPress [0] to return: ");
+    int returnChoice;
+    scanf("%d", &returnChoice);
+    if (returnChoice == 0) {
+        return; // Exit the function
+    }
+}
 
 void arranger(int amount,int array[],int array2[]){
     int a;
@@ -350,7 +480,6 @@ void ownersearch()
 
 void addstock()
 {
-
     printf("=====================\n");
     printf("Add stock\n");
     printf("================////\n\n");
@@ -391,7 +520,7 @@ void addstock()
     scanf("%lf", &stock[amount].threshold);
 
     int a;
-    printf("[1] Comfirm\n");
+    printf("[1] Confirm\n");
     printf("[2] Cancel\n");
     printf("Please make your choice: ");
 
@@ -402,14 +531,23 @@ void addstock()
         switch (a)
         {
         case 1: // confirm
+            // Log the new stock details
+            {
+                char logDetails[512];
+                sprintf(logDetails, "New stock added - ID: %d, Name: '%s', Class: '%c', Max: %d, Quantity: %d, Price: %.2lf, Threshold: %.2lf",
+                        stock[amount].id, stock[amount].name, stock[amount].class, stock[amount].max,
+                        stock[amount].quantity, stock[amount].price, stock[amount].threshold);
+                writeLog("Report", logDetails);
+            }
+
             ++amount;
-            // addstock();
-            return;
+            return; // Return after adding stock
             break;
+
         case 2: // cancel
-            // addstock();
-            return;
+            return; // Return without adding stock
             break;
+
         default:
             printf("Please make invalid choice!\n");
             printf("Please make your choice: ");
@@ -461,8 +599,12 @@ void deleteproduct()
         }
         else if (delete > 0 && delete <= amount)
         {
+            // Format the log message for product deletion
+            char logDetails[256];
+            sprintf(logDetails, "Product ID %d named '%s' is being deleted", stock[delete - 1].id, stock[delete - 1].name);
+            writeLog("Report", logDetails);
 
-            printf("[1] Comfirm\n");
+            printf("[1] Confirm\n");
             printf("[2] Cancel\n");
             printf("Please make your choice: ");
 
@@ -473,7 +615,8 @@ void deleteproduct()
                 switch (a)
                 {
                 case 1: // confirm
-                    for (int i = delete -1; i < amount; ++i)
+                    // Log the deletion before shifting
+                    for (int i = delete - 1; i < amount - 1; ++i)
                     {
                         stock[i].class = stock[i + 1].class;
                         stock[i].id = i + 1;
@@ -485,13 +628,15 @@ void deleteproduct()
                         stock[i].max = stock[i + 1].max;
                     }
                     --amount;
-                    deleteproduct();
+                    deleteproduct();  // Recursively call to allow for continuous deletion
                     return;
                     break;
+
                 case 2: // cancel
-                    deleteproduct();
+                    deleteproduct();  // Recursively call to go back to the delete menu
                     return;
                     break;
+
                 default:
                     printf("Please make invalid choice!\n");
                     printf("Please make your choice: ");
@@ -533,9 +678,7 @@ void editproduct()
     printtable();
 
     int edit, a, b, inttemp;
-
     char strtemp[1000], chrtemp;
-
     double fltemp;
 
     printf("\n\n");
@@ -554,12 +697,10 @@ void editproduct()
         }
         else if (edit > 0 && edit <= amount)
         {
-
             --edit;
 
             while (1)
             {
-
                 system("cls");
                 printf("=====================\n");
                 printheader();
@@ -605,35 +746,65 @@ void editproduct()
                                 else
                                     break;
                             }
+                            // Format the log message
+                            char logDetails[256];
+                            sprintf(logDetails, "Class for product ID %d changed from '%c' to '%c'", stock[edit].id, stock[edit].class, chrtemp);
+                            writeLog("Report", logDetails);
                             break;
+
                         case 2:
                             printf("New name: ");
                             scanf(" %[^\n]", &strtemp);
+                            // Format the log message
+                            sprintf(logDetails, "Name for product ID %d changed from '%s' to '%s'", stock[edit].id, stock[edit].name, strtemp);
+                            writeLog("Report", logDetails);
                             break;
+
                         case 3:
                             printf("New quantity: ");
                             scanf("%d", &inttemp);
+                            // Format the log message
+                            sprintf(logDetails, "Quantity for product ID %d changed from %d to %d", stock[edit].id, stock[edit].quantity, inttemp);
+                            writeLog("Report", logDetails);
                             break;
+
                         case 4:
                             printf("New price: ");
                             scanf("%lf", &fltemp);
+                            // Format the log message
+                            sprintf(logDetails, "Price for product ID %d changed from %.2lf to %.2lf", stock[edit].id, stock[edit].price, fltemp);
+                            writeLog("Report", logDetails);
                             break;
+
                         case 5:
                             printf("New description: ");
                             scanf("%s", &strtemp);
+                            // Format the log message
+                            sprintf(logDetails, "Description for product ID %d changed from '%s' to '%s'", stock[edit].id, stock[edit].description, strtemp);
+                            writeLog("Report", logDetails);
                             break;
+
                         case 6:
                             printf("New threshold: ");
                             scanf("%lf", &fltemp);
+                            // Format the log message
+                            sprintf(logDetails, "Threshold for product ID %d changed from %.2lf to %.2lf", stock[edit].id, stock[edit].threshold, fltemp);
+                            writeLog("Report", logDetails);
                             break;
+
                         case 7:
                             printf("New max: ");
                             scanf("%d", &inttemp);
+                            // Format the log message
+                            sprintf(logDetails, "Max for product ID %d changed from %d to %d", stock[edit].id, stock[edit].max, inttemp);
+                            writeLog("Report", logDetails);
                             break;
+
                         case 8:
                             editproduct();
                             return;
                             break;
+
                         default:
                             break;
                         }
@@ -641,7 +812,7 @@ void editproduct()
                     }
                 }
 
-                printf("[1] Comfirm\n");
+                printf("[1] Confirm\n");
                 printf("[2] Cancel\n");
                 printf("Please make your choice: ");
 
@@ -733,6 +904,60 @@ void stockpage()
         default:
             printf("Please make invalid choice!\n");
             printf("Please make your choice: ");
+        }
+    }
+}
+
+void checkLowStockAndRestock() {
+    system("cls");
+    printf("===== Low Stock Notification =====\n");
+    int lowStockFound = 0;
+
+    // Check each product's stock using threshold percentage
+    for (int i = 0; i < amount; ++i) {
+        double calculatedThreshold = (stock[i].threshold / 100.0) * stock[i].max; // Calculate threshold dynamically
+
+        if (stock[i].quantity < calculatedThreshold) {
+            printf("⚠️ Product ID: %d | Name: %s | Quantity: %d | Threshold: %.0lf (%.2lf%% of Max: %d)\n",
+                   stock[i].id, stock[i].name, stock[i].quantity, calculatedThreshold,
+                   stock[i].threshold, stock[i].max);
+            lowStockFound = 1;
+        }
+    }
+
+    if (!lowStockFound) {
+        printf("✅ All products have sufficient stock.\n");
+        sleep(2);
+        return;
+    }
+
+    // Prompt to restock
+    int choice, quantityToAdd;
+    printf("\nDo you want to restock products? [1] Yes / [2] No: ");
+    scanf("%d", &choice);
+
+    if (choice == 1) {
+        while (1) {
+            printf("\nEnter the Product ID to restock (0 to exit): ");
+            scanf("%d", &choice);
+            if (choice == 0) break;
+
+            if (choice > 0 && choice <= amount) {
+                printf("Current Quantity: %d | Max: %d\n", stock[choice - 1].quantity, stock[choice - 1].max);
+                printf("Enter quantity to add: ");
+                scanf("%d", &quantityToAdd);
+
+                if (quantityToAdd > 0) {
+                    stock[choice - 1].quantity += quantityToAdd;
+                    printf("✅ Stock updated successfully!\n");
+                    savefile();
+                    writeLog("Stock Restock", stock[choice - 1].name);
+                } else {
+                    printf("❌ Invalid quantity entered!\n");
+                }
+            } else {
+                printf("❌ Invalid Product ID!\n");
+            }
         }
     }
 }
@@ -861,7 +1086,8 @@ void manageCoupons() {
                 }
                 fprintf(file, "%s,%.2f,%s\n", finalCode, discountPercentage, expirationDate);
                 fclose(file);
-
+                sprintf(logDetails, "Coupon %s added", finalCode); // Format the string with finalCode
+                writeLog("Report", logDetails); // Pass the formatted string to writeLog
                 printf("Coupon added successfully!\n");
                 break;
             }
@@ -900,6 +1126,8 @@ void manageCoupons() {
                 if (found) {
                     remove(filename);
                     rename("temp.csv", filename);
+                    sprintf(logDetails, "Coupon %s deleted", codeToDelete); // Format the string
+                    writeLog("Report", logDetails); // Pass the formatted string
                     printf("Coupon '%s' deleted successfully!\n", codeToDelete);
                 } else {
                     remove("temp.csv");
@@ -926,8 +1154,6 @@ void manageCoupons() {
     } while (choice != 3);
 }
 
-
-
 void printownerscreen()
 {
     system("cls");
@@ -939,45 +1165,63 @@ void printownerscreen()
     printf("[2] Manage coupon\n");
     printf("[3] View report\n");
     printf("[4] Logging\n");
-    printf("[5] Return to menu\n\n");
+    printf("[5] Check Low Stock & Restock\n");
+    printf("[6] Return to menu\n\n");
     printf("Please make your choice: ");
 }
 
-void ownerscreen()
-{
-
+void ownerscreen() {
     printownerscreen();
-
     int a;
 
-    while (1)
-    {
+    while (1) {
+        // Clear any remaining characters in the input buffer before reading input
+        while (getchar() != '\n'); 
 
         scanf("%d", &a);
-
-        switch (a)
-        {
-        case 1: // manage stock
-            stockpage();
-            printownerscreen();
-            break;
-        case 2: // manage coupon
-            manageCoupons();
-            printownerscreen();
-            break;
-        case 3: // view report
-
-            break;
-        case 4: // logging
-
-            break;
-        case 5: // return menu
-            system("cls");
-            return;
-            break;
-        default:
-            printf("Please make invalid choice!\n");
-            printf("Please make your choice: ");
+        switch (a) {
+            case 1: // manage stock
+                stockpage();
+                printownerscreen();
+                break;
+            case 2: // manage coupon
+                manageCoupons();
+                printownerscreen();
+                break;
+            case 3: // view report
+                viewReport();
+                printownerscreen();
+                break;
+            case 4: // logging
+                system("cls");
+                printf("========== View Logs ==========\n");
+                FILE *logFile = fopen("log.txt", "r");
+                if (logFile == NULL) {
+                    printf("No logs found.\n");
+                } else {
+                    char logLine[500];
+                    while (fgets(logLine, sizeof(logLine), logFile)) {
+                        printf("%s", logLine);
+                    }
+                    fclose(logFile);
+                }
+                printf("\nPress [0] to return: ");
+                int returnChoice;
+                while (returnChoice != 0) {
+                    scanf("%d", &returnChoice);
+                }
+                printownerscreen();
+                break;
+            case 5: // Check Low Stock & Restock
+                checkLowStockAndRestock();
+                printownerscreen();
+                break;
+            case 6: // return menu
+                system("cls");
+                return;
+            default:
+                printf("Please make a valid choice!\n");
+                printf("Please make your choice: ");
         }
     }
 }
@@ -1184,8 +1428,6 @@ void readCoupons()
     fclose(couponFile);
 }
 
-double totalIncome = 0.0;
-
 int validateCoupon(const char *couponCode, double *discount) {
     FILE *couponFile = fopen("coupons.csv", "r");
     if (couponFile == NULL) {
@@ -1230,23 +1472,6 @@ int validateCoupon(const char *couponCode, double *discount) {
     printf("Coupon not found.\n");
     fclose(couponFile);
     return 0; // Invalid coupon
-}
-
-
-void savePurchaseHistory(const char *purchasedItems, double totalPrice, double discountAmount)
-{
-    FILE *historyFile = fopen("purchase_history.csv", "a");
-    if (historyFile == NULL)
-    {
-        printf("Error opening purchase history file.\n");
-        return;
-    }
-
-    fprintf(historyFile, "\"%s\",%.2lf,%.2lf\n", purchasedItems, totalPrice, discountAmount);
-    fclose(historyFile);
-
-    // Update total income
-    totalIncome += totalPrice;
 }
 
 void buyNow() {
