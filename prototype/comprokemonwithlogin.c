@@ -145,7 +145,7 @@ int login() {
     char username[1000], password[1000];
     system("cls");
     printf("=====================\n");
-    printf("        Login\n");
+    printf("Login\n");
     printf("================////\n\n");
 
     printf("Enter username: ");
@@ -193,7 +193,7 @@ void loginMenu() {
     while (1) {
         system("cls");
         printf("=====================\n");
-        printf("      Welcome\n");
+        printf("Welcome\n");
         printf("================////\n\n");
 
         printf("Make your choice:\n");
@@ -201,7 +201,7 @@ void loginMenu() {
         printf("[2] Create Account\n");
         printf("[0] Exit\n\n");
         printf("Please make your choice: ");
-        scanf("%d", &choice);
+        choice = universalscanf(2);
 
         if (choice == 1) {
             if (login()) break; // Successful login
@@ -231,7 +231,7 @@ void createAccount() {
 
     system("cls");
     printf("=====================\n");
-    printf("     Create Account\n");
+    printf("Create Account\n");
     printf("================////\n\n");
 
     while (1) { 
@@ -2367,7 +2367,7 @@ void mainmenu() {
     while (1) {
         system("cls");
         printf("=====================\n");
-        printf("       Main Menu\n");
+        printf("Main Menu Acount ID:%d\n",loggedInAccountID);
         printf("================////\n\n");
 
         printf("Make your choice:\n");
@@ -2398,10 +2398,6 @@ void mainmenu() {
         }
     }
 }
-
-
-
-
 
 
 int main() {
