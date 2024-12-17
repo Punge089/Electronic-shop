@@ -117,18 +117,33 @@ void clearcart(){
     icart=0;
 }
 
+void savefile();
+
+void writeLog();
 
 void autoBuy() {
     int restocked = 0;
+    char logDetails[1024] = "Restocked items ";
+
     for (int i = 0; i < amount; i++) {
         if (stock[i].quantity < stock[i].threshold) {
-            stock[i].quantity = stock[i].max;
+            stock[i].quantity = stock[i].max;  // Restock the product to max
             restocked++;
+
+            // Log the restocked product (ID and Name)
+            char productDetails[256];
+            sprintf(productDetails, "ID: %d, Name: %s, ", stock[i].id, stock[i].name);
+            strcat(logDetails, productDetails);
         }
     }
+
     if (restocked > 0) {
         savefile();
         printf("[Auto Buy] Restocked %d items automatically.\n", restocked);
+        // Write the log after restocking
+        writeLog("Auto Buy", logDetails);
+    } else {
+        printf("[Auto Buy] No items needed restocking.\n");
     }
 }
 
@@ -323,45 +338,6 @@ void viewReport() {
     if (returnChoice == 0) {
         return; // Exit the function
     }
-}
-
-void arranger(int amount,int array[],int array2[]){
-    int a;
-    for(a=0;a<amount;++a) if(a == 0) break;
-    for(i=a;i<amount;++i){
-        array[i]=array[i+1];
-        array2[i]=array2[i+1];
-    }
-    array[i]='\0';
-    array2[i]='\0';
-}
-
-int maxvalue(int amount ,int array[]){
-    int max=array[0];
-    for(int i=0;i<amount;++i){
-        if(max<array[i]) max = array[i];
-    }
-    return max;
-}
-
-int universalscanf(int max){
-    int choice=0;
-    if(max==0) max = 999;
-    scanf(" %[^\n]",temp);
-    for(int i=0;i<strlen(temp);++i) choice = (choice*pow(10,i))+(temp[i]-'0');
-    if(choice>=0 && choice<=max) return choice;
-    else{
-        printf("Choose valid!");
-        universalscanf(max);
-    }
-}
-
-void clearcart(){
-    for(int i=0;i<icart;++i){
-        cart[i]='\0';
-        cartamount[i]='\0';
-    }
-    icart=0;
 }
 
 void printheader()
@@ -1101,15 +1077,29 @@ void checkLowStockAndRestock() {
             if (choice == 0) break;
 
             if (choice > 0 && choice <= amount) {
-                printf("Current Quantity: %d | Max: %d\n", stock[choice - 1].quantity, stock[choice - 1].max);
+                int productIndex = choice - 1;
+                double calculatedThreshold = (stock[productIndex].threshold / 100.0) * stock[productIndex].max;
+
+                printf("Current Quantity: %d | Max: %d | Threshold: %.0lf\n",
+                       stock[productIndex].quantity, stock[productIndex].max, calculatedThreshold);
                 printf("Enter quantity to add: ");
                 scanf("%d", &quantityToAdd);
 
                 if (quantityToAdd > 0) {
-                    stock[choice - 1].quantity += quantityToAdd;
+                    stock[productIndex].quantity += quantityToAdd;
+
                     printf("✅ Stock updated successfully!\n");
+                    writeLog("Stock Restock", stock[productIndex].name);
                     savefile();
-                    writeLog("Stock Restock", stock[choice - 1].name);
+
+                    // Check if the updated stock now exceeds the threshold
+                    if (stock[productIndex].quantity >= calculatedThreshold) {
+                        printf("✅ Product '%s' is now above its threshold (%.0lf).\n",
+                               stock[productIndex].name, calculatedThreshold);
+                    } else {
+                        printf("⚠️ Product '%s' is still below its threshold (%.0lf).\n",
+                               stock[productIndex].name, calculatedThreshold);
+                    }
                 } else {
                     printf("❌ Invalid quantity entered!\n");
                 }
@@ -1119,6 +1109,7 @@ void checkLowStockAndRestock() {
         }
     }
 }
+
 
 void manageCoupons() {
     srand(time(NULL));
@@ -1394,7 +1385,6 @@ void printmainmenu()
     printf("[1] Customer page\n");
     printf("[2] Owner page\n");
     printf("[3] Exit\n\n");
-    printf("Please make your choice: ");
 }
 
 void printcart(){
@@ -1515,27 +1505,52 @@ void buylater() {
                 }
             }
 
-        } else if (choice == 3) { // Set Schedule
-            if (icart == 0) {
-                printf("Cart is empty! Add items first.\n");
-                printf("[∞] Press any key to return: ");
-                universalscanf(0);
-                continue;
-            }
+        }else if (choice == 3) { // Set Schedule
+    if (icart == 0) {
+        printf("Cart is empty! Add items first.\n");
+        printf("[∞] Press any key to return: ");
+        universalscanf(0);
+        continue;
+    }
 
-            printf("Set day [0=Sunday, 6=Saturday]: ");
-            int day = universalscanf(6);
-            for (int i = 0; i < icart; ++i) {
-                account[accountamount].day[i] = day;
-                account[accountamount].id[i] = stock[cart[i]].id;
-                account[accountamount].quantity[i] = cartamount[i];
-            }
-            account[accountamount].amount = icart;
-            account[accountamount].accountid = accountamount + 1;
-            accountamount++;
-            clearcart();
-            printf("Schedule saved successfully!\n");
-            sleep(1);
+    printf("Set day [0=Sunday, 6=Saturday]: ");
+    int day = universalscanf(6);
+
+    // Convert day index to day name directly
+    const char* dayName;
+    switch (day) {
+        case 0: dayName = "Sunday"; break;
+        case 1: dayName = "Monday"; break;
+        case 2: dayName = "Tuesday"; break;
+        case 3: dayName = "Wednesday"; break;
+        case 4: dayName = "Thursday"; break;
+        case 5: dayName = "Friday"; break;
+        case 6: dayName = "Saturday"; break;
+        default: dayName = "Unknown"; break;
+    }
+
+    // Prepare the log message
+    char logDetails[1024] = "";
+    sprintf(logDetails, "Scheduled Purchase for %s: ", dayName);
+
+    for (int i = 0; i < icart; ++i) {
+        account[accountamount].day[i] = day;
+        account[accountamount].id[i] = stock[cart[i]].id;
+        account[accountamount].quantity[i] = cartamount[i];
+        char temp[256];
+        sprintf(temp, "%s x%d, ", stock[cart[i]].name, cartamount[i]);
+        strcat(logDetails, temp);
+    }
+
+    account[accountamount].amount = icart;
+    account[accountamount].accountid = accountamount + 1;
+    accountamount++;
+    clearcart();
+
+    printf("Schedule saved successfully for %s!\n", dayName);
+    writeLog("Scheduled Purchase", logDetails);
+    sleep(2);
+
 
         } else if (choice == 4) { // View Schedule
             viewSchedule();
@@ -1547,16 +1562,15 @@ void buylater() {
 
         } else if (choice == 0) { // Exit
             printf("Exiting cart management...\n");
-            sleep(1);
+            sleep(2);
             break;
 
         } else {
             printf("Invalid choice! Please try again.\n");
-            sleep(1);
+            sleep(2);
         }
     }
 }
-
 
 int couponCount = 0; // Tracks the number of coupons loaded
 
