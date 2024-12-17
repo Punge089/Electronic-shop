@@ -5,7 +5,6 @@
 #include <math.h>
 #include <unistd.h>
 #define ARRAYVALUE 1000
-
 int second,minute,hour,day,month,year;
 struct account
 {
@@ -19,6 +18,7 @@ struct account
 
 }account[ARRAYVALUE];
 
+int loggedInAccountID = 1;
 int accountamount;
 
 struct stock
@@ -117,76 +117,53 @@ void clearcart(){
     icart=0;
 }
 
+void readSchedule() {
+    FILE *file = fopen("schedule.csv", "r");
+    if (!file) {
+        printf("No schedule file found. Starting with an empty schedule.\n");
+        return;
+    }
+
+    char buffer[256];
+    fgets(buffer, sizeof(buffer), file); // Skip the header line
+
+    accountamount = 0; // Reset account count
+
+    while (fgets(buffer, sizeof(buffer), file)) {
+        int accountID, day, productID, quantity;
+        if (sscanf(buffer, "%d,%d,%d,%d", &accountID, &day, &productID, &quantity) == 4) {
+            // Find or create an account
+            int index = -1;
+            for (int i = 0; i < accountamount; i++) {
+                if (account[i].accountid == accountID) {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index == -1) { // Create new account if not found
+                index = accountamount++;
+                account[index].accountid = accountID;
+                account[index].amount = 0;
+            }
+
+            // Add schedule data to the correct account
+            int currentAmount = account[index].amount;
+            account[index].day[currentAmount] = day;
+            account[index].id[currentAmount] = productID;
+            account[index].quantity[currentAmount] = quantity;
+            account[index].amount++;
+        }
+    }
+
+    fclose(file);
+    printf("[Schedule] Schedule loaded successfully!\n");
+}
+
+
 void savefile();
 
 void writeLog();
-
-void viewSchedule() {
-    const char *daysOfWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-    if (accountamount == 0) {
-        printf("No schedules to display.\n");
-        return;
-    }
-    printf("%-10s %-25s %-15s\n", "Day", "Product", "Quantity");
-    for (int i = 0; i < accountamount; ++i) {
-        for (int j = 0; j < account[i].amount; ++j) {
-            printf("%-10s %-25s %-15d\n", daysOfWeek[account[i].day[j]], stock[account[i].id[j] - 1].name, account[i].quantity[j]);
-        }
-    }
-}
-
-void editSchedule() {
-    if (accountamount == 0) {
-        printf("No schedules to edit.\n");
-        return;
-    }
-
-    const char *daysOfWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-    printf("\nCurrent Schedules:\n");
-    printf("%-5s %-10s %-20s %-10s\n", "Index", "Day", "Product", "Quantity");
-
-    int index = 1;
-    for (int i = 0; i < accountamount; ++i) {
-        for (int j = 0; j < account[i].amount; ++j) {
-            printf("%-5d %-10s %-20s %-10d\n", index++, daysOfWeek[account[i].day[j]], 
-                   stock[account[i].id[j] - 1].name, account[i].quantity[j]);
-        }
-    }
-
-    printf("Enter schedule index to edit [0 to cancel]: ");
-    int editIndex = universalscanf(index - 1);
-    if (editIndex == 0) return;
-
-    // Locate the specific schedule
-    int currentIndex = 0;
-    for (int i = 0; i < accountamount; ++i) {
-        for (int j = 0; j < account[i].amount; ++j) {
-            currentIndex++;
-            if (currentIndex == editIndex) {
-                printf("1. Edit Day\n2. Edit Quantity\n3. Delete Schedule\n0. Cancel\n");
-                int option = universalscanf(3);
-                if (option == 1) {
-                    printf("Enter new day [0=Sunday, 6=Saturday]: ");
-                    account[i].day[j] = universalscanf(6);
-                } else if (option == 2) {
-                    printf("Enter new quantity: ");
-                    account[i].quantity[j] = universalscanf(stock[account[i].id[j] - 1].max);
-                } else if (option == 3) {
-                    for (int k = j; k < account[i].amount - 1; ++k) {
-                        account[i].day[k] = account[i].day[k + 1];
-                        account[i].id[k] = account[i].id[k + 1];
-                        account[i].quantity[k] = account[i].quantity[k + 1];
-                    }
-                    account[i].amount--;
-                }
-                printf("Schedule updated successfully!\n");
-                return;
-            }
-        }
-    }
-}
-
-
 
 // Function to log actions to a file
 void writeLog(const char *action, const char *details) {
@@ -485,10 +462,10 @@ void ownersearch()
         else if (a == 2)
         {
             printf("Make your choice:\n");
-            printf("[1] Phone\n");
-            printf("[2] Gadgets\n");
-            printf("[3] est\n");
-            printf("[4] Exit\n\n");
+            printf("[1] Appliances\n");
+            printf("[2] Electronics\n");
+            printf("[3] Gaming\n");
+            printf("[0] Exit\n\n");
             printf("Please make your choice: ");
             while (1)
             {
@@ -502,15 +479,15 @@ void ownersearch()
                 }
                 else if (a == 2)
                 {
-                    tempchr = 'A';
+                    tempchr = 'E';
                     break;
                 }
                 else if (a == 3)
                 {
-                    tempchr = 'A';
+                    tempchr = 'G';
                     break;
                 }
-                else if (a == 4)
+                else if (a == 0)
                     return;
                 else
                 {
@@ -583,26 +560,189 @@ void ownersearch()
     }
 }
 
+void customersearch()
+{
+    system("cls");
+    printctable(); // Print stock table without class, threshold, and max
+
+    int a;
+
+    while (1)
+    {
+        printf("=====================\n");
+        printf("    Customer Search\n");
+        printf("=====================\n\n");
+        printf("Make your choice:\n");
+        printf("[1] Name\n");
+        printf("[2] Category\n");
+        printf("[3] Price Range\n");
+        printf("[4] Exit\n\n");
+        printf("Please make your choice: ");
+
+        scanf("%d", &a);
+
+        int count, j, k, z;
+        char tempchr;
+
+        if (a == 1) // Search by Name
+        {
+            printf("Enter product name to search: ");
+            scanf("%s", temp);
+            system("cls");
+            printcheader();
+            count = 0;
+
+            for (int i = 0; i < amount; ++i)
+            {
+                if (strlen(temp) <= strlen(stock[i].name))
+                {
+                    for (j = 0; j < (strlen(stock[i].name) - strlen(temp) + 1); ++j)
+                    {
+                        for (k = j, z = 0; k < (strlen(temp) + j); ++k, ++z)
+                        {
+                            if ((temp[z] != stock[i].name[k]) &&
+                                (temp[z] != (stock[i].name[k] + 'A' - 'a')) &&
+                                (temp[z] != (stock[i].name[k] + 'a' - 'A')))
+                            {
+                                break;
+                            }
+                        }
+                        if (z == strlen(temp))
+                        {
+                            printf("%-5d %-20s %-10d %-10.2lf %-70s\n",
+                                   stock[i].id, stock[i].name, stock[i].quantity, stock[i].price, stock[i].description);
+                            ++count;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (count == 0)
+            {
+                printf("\nNo items found matching your search!\n");
+            }
+            printf("\n");
+        }
+        else if (a == 2) // Search by Category
+        {
+            printf("Choose a category:\n");
+            printf("[1] Appliances\n");
+            printf("[2] Electronics\n");
+            printf("[3] Gaming\n");
+            printf("[0] Exit\n\n");
+            printf("Please make your choice: ");
+
+            while (1)
+            {
+                scanf("%d", &a);
+
+                if (a == 1)
+                {
+                    tempchr = 'A';
+                    break;
+                }
+                else if (a == 2)
+                {
+                    tempchr = 'E';
+                    break;
+                }
+                else if (a == 3)
+                {
+                    tempchr = 'G';
+                    break;
+                }
+                else if (a == 0)
+                    return;
+                else
+                {
+                    printf("Invalid choice! Please choose again: ");
+                }
+            }
+
+            system("cls");
+            printcheader();
+            count = 0;
+
+            for (int i = 0; i < amount; ++i)
+            {
+                if (stock[i].class == tempchr)
+                {
+                    printf("%-5d %-20s %-10d %-10.2lf %-70s\n",
+                           stock[i].id, stock[i].name, stock[i].quantity, stock[i].price, stock[i].description);
+                    ++count;
+                }
+            }
+
+            if (count == 0)
+            {
+                printf("\nNo items found in this category!\n");
+            }
+            printf("\n");
+        }
+        else if (a == 3) // Search by Price Range
+        {
+            double startprice, endprice;
+
+            printf("Enter start price: ");
+            scanf("%lf", &startprice);
+            printf("Enter end price: ");
+            scanf("%lf", &endprice);
+
+            system("cls");
+            printcheader();
+            count = 0;
+
+            for (int i = 0; i < amount; ++i)
+            {
+                if (stock[i].price >= startprice && stock[i].price <= endprice)
+                {
+                    printf("%-5d %-20s %-10d %-10.2lf %-70s\n",
+                           stock[i].id, stock[i].name, stock[i].quantity, stock[i].price, stock[i].description);
+                    ++count;
+                }
+            }
+
+            if (count == 0)
+            {
+                printf("\nNo items found in this price range!\n");
+            }
+            printf("\n");
+        }
+        else if (a == 4) // Exit
+        {
+            return;
+        }
+        else
+        {
+            printf("Invalid choice! Please try again.\n");
+        }
+    }
+}
+
 void addstock()
 {
     printf("=====================\n");
     printf("Add stock\n");
     printf("================////\n\n");
 
-    printf("Class(M,H,S,P) :");
-    scanf(" %c", &stock[amount].class);
+printf("Class(E = Electronics, A = Appliances, G = Gaming): ");
+scanf(" %c", &stock[amount].class);
 
-    while (1)
+while (1)
+{
+    if (stock[amount].class != 'E' && stock[amount].class != 'A' && stock[amount].class != 'G' &&
+        stock[amount].class != 'e' && stock[amount].class != 'a' && stock[amount].class != 'g')
     {
-        if (stock[amount].class != 'A')
-        {
-            printf("Please make invalid choice!\n");
-            printf("Please make your choice:");
-            scanf(" %c", &stock[amount].class);
-        }
-        else
-            break;
+        printf("Invalid choice! Please enter:\n");
+        printf("E = Electronics, A = Appliances, G = Gaming\n");
+        printf("Please make your choice: ");
+        scanf(" %c", &stock[amount].class);
     }
+    else
+        break;
+}
+
 
     stock[amount].id = amount + 1;
 
@@ -675,7 +815,7 @@ void printstockpage()
     printf("[2] Edit product\n");
     printf("[3] Delete product\n");
     printf("[4] Search\n");
-    printf("[5] Return menu\n");
+    printf("[0] Return menu\n");
     printf("Please make your choice: ");
 }
 
@@ -1006,7 +1146,7 @@ void stockpage()
             ownersearch();
             printstockpage();
             break;
-        case 5: // return menu
+        case 0: // return menu
             return;
             break;
         default:
@@ -1090,6 +1230,26 @@ void checkLowStockAndRestock() {
     }
 }
 
+void saveSchedule() {
+    FILE *file = fopen("schedule.csv", "w");
+    if (!file) {
+        printf("Error: Cannot open schedule file for saving.\n");
+        return;
+    }
+
+    fprintf(file, "AccountID,Day,ProductID,Quantity\n"); // Header line
+
+    for (int i = 0; i < accountamount; ++i) {
+        for (int j = 0; j < account[i].amount; ++j) {
+            fprintf(file, "%d,%d,%d,%d\n",
+                    account[i].accountid, account[i].day[j],
+                    account[i].id[j], account[i].quantity[j]);
+        }
+    }
+
+    fclose(file);
+    printf("[Schedule] Schedule saved successfully!\n");
+}
 
 
 void manageCoupons() {
@@ -1296,7 +1456,7 @@ void printownerscreen()
     printf("[3] View report\n");
     printf("[4] Logging\n");
     printf("[5] Check Low Stock & Restock\n");
-    printf("[6] Return to menu\n\n");
+    printf("[0] Return to menu\n\n");
     printf("Please make your choice: ");
 }
 
@@ -1346,7 +1506,7 @@ void ownerscreen() {
                 checkLowStockAndRestock();
                 printownerscreen();
                 break;
-            case 6: // return menu
+            case 0: // return menu
                 system("cls");
                 return;
             default:
@@ -1365,7 +1525,7 @@ void printmainmenu()
     printf("Make your choice:\n");
     printf("[1] Customer page\n");
     printf("[2] Owner page\n");
-    printf("[3] Exit\n\n");
+    printf("[0] Exit\n\n");
 }
 
 void printcart(){
@@ -1384,174 +1544,208 @@ void printcart(){
     printf("\n\n");
 }
 
-void buylater() {
+void buylater(int loggedInAccountID) {
     int choice, quantity, count = 0;
-
     while (1) {
         system("cls");
         printf("=====================\n");
-        printf("Cart Management\n");
-        printf("================////\n\n");
+        printf("Cart & Schedule Menu\n");
+        printf("================//////\n\n");
         printcart();
+
         printf("Make your choice:\n");
-        printf("[1] Add to Cart\n");
+        printf("[1] Add Cart\n");
         printf("[2] Edit Cart\n");
-        printf("[3] Set Schedule\n");
-        printf("[4] View Schedule\n");
-        printf("[5] Edit Schedule\n");
-        printf("[0] Exit\n\n");
+        printf("[3] View Schedule\n");
+        printf("[4] Edit Schedule\n");
+        printf("[5] Exit\n\n");
         printf("Please make your choice: ");
-        choice = universalscanf(5);
+        scanf("%d", &choice);
 
-        if (choice == 1) { // Add to Cart
+        if (choice == 1) { // Add Cart
             while (1) {
-                printctable();
-                printf("=====================\n");
-                printf("Add to Cart\n");
-                printf("================////\n\n");
-                printcart();
-
-                printf("Exit[0]: ");
-                printf("Please make your choice [1-%d]: ", amount);
-                int selectedProduct = universalscanf(amount);
-                if (selectedProduct == 0) break;
-
-                --selectedProduct;
-                printf("Quantity [1-%d]: ", stock[selectedProduct].quantity);
-                quantity = universalscanf(stock[selectedProduct].quantity);
-
                 while (1) {
-                    if (quantity >= 1 && quantity <= stock[selectedProduct].quantity) break;
-                    else {
-                        printf("Choose a valid quantity: ");
-                        scanf("%d", &quantity);
-                    }
+                    system("cls");
+                    printctable();
+                    printf("=====================\n");
+                    printf("Add Cart\n");
+                    printf("================//////\n\n");
+                    printcart();
+
+                    printf("Add cart [1-%d]: \n", amount);
+                    printf("Exit [0]: \n");
+                    printf("Please make your choice: ");
+                    choice = universalscanf(amount);
+                    --choice;
+                    if (choice == -1) break;
+
+                    printf("\n\n");
+                    printf("Quantity [1-%d]: \n", stock[choice].quantity);
+                    printf("Exit [0]: \n");
+                    printf("Please make your choice: ");
+                    quantity = universalscanf(stock[choice].quantity);
+                    if (quantity != 0) break;
                 }
+                if (choice == -1) break;
 
                 count = 0;
                 for (int i = 0; i < icart; ++i) {
-                    if (selectedProduct == cart[i]) {
+                    if (choice == cart[i]) {
                         cartamount[i] += quantity;
                         ++count;
                     }
                 }
                 if (count == 0) {
-                    cart[icart] = selectedProduct;
+                    cart[icart] = choice;
                     cartamount[icart] = quantity;
                     ++icart;
                 }
             }
-
-        } else if (choice == 2) { // Edit Cart
+        } 
+        else if (choice == 2) { // Edit Cart
             if (icart == 0) {
+                system("cls");
+                printf("=====================\n");
+                printf("Edit Cart\n");
+                printf("================//////\n\n");
                 printf("No cart to edit!\n");
-                printf("[∞] Press any key to return: ");
+                printf("[∞] Press any key to exit: ");
                 universalscanf(0);
-                return;
             } else {
                 while (1) {
+                    system("cls");
                     printctable();
                     printf("=====================\n");
                     printf("Edit Cart\n");
-                    printf("================////\n\n");
+                    printf("================//////\n\n");
                     printcart();
 
-                    printf("Exit[0]: \n");
-                    printf("Please make your choice [ID]: ");
-                    printf("Reset cart [%d]: ", maxvalue(icart, cart) + 2);
+                    printf("Edit [ID]: \n");
+                    printf("Reset cart [%d]: \n", maxvalue(icart, cart) + 2);
+                    printf("Exit [0]: \n");
+                    printf("Please make your choice: ");
+                    int max = maxvalue(icart, cart), search, count = 0;
 
-                    int max = maxvalue(icart, cart);
-                    int search = -1, targetChoice = universalscanf(max + 2);
+                    while (1) {
+                        choice = universalscanf(max + 2);
+                        if (choice == 0 || choice == max + 2) break;
 
-                    if (targetChoice == 0) break;
+                        for (search = 0; search < icart; ++search) {
+                            if (choice - 1 == cart[search]) {
+                                ++count;
+                                break;
+                            }
+                        }
+                        if (count != 0) break;
+                        else printf("Choose valid ID: ");
+                    }
 
-                    for (int i = 0; i < icart; ++i) {
-                        if (targetChoice - 1 == cart[i]) {
-                            search = i;
+                    if (choice == 0) break;
+                    else if (choice == max + 2) {
+                        if (confirm() == 0) break;
+                        else {
+                            clearcart();
                             break;
                         }
                     }
-                    if (search == -1) {
-                        printf("Choose a valid item.\n");
-                        continue;
-                    }
+
+                    printcheader();
+                    printf("%-5d %-20s %-10d %-10.2lf %-70s\n",
+                           stock[cart[search]].id, stock[cart[search]].name, cartamount[search],
+                           stock[cart[search]].price, stock[cart[search]].description);
 
                     printf("Quantity [1-%d]: ", stock[cart[search]].quantity);
                     cartamount[search] = universalscanf(stock[cart[search]].quantity + 1);
 
-                    if (cartamount[search] == 0) { // Remove item if quantity is 0
+                    if (cartamount[search] == 0) {
                         arranger(icart, cart, cartamount);
                         --icart;
                     }
                 }
             }
+        } 
+        else if (choice == 3) { // View Schedule
+            system("cls");
+            printf("=====================\n");
+            printf("View Schedule (Account ID: %d)\n", loggedInAccountID);
+            printf("================//////\n\n");
 
-        }else if (choice == 3) { // Set Schedule
-    if (icart == 0) {
-        printf("Cart is empty! Add items first.\n");
-        printf("[∞] Press any key to return: ");
-        universalscanf(0);
-        continue;
-    }
+            const char *daysOfWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+            int found = 0;
 
-    printf("Set day [0=Sunday, 6=Saturday]: ");
-    int day = universalscanf(6);
+            for (int i = 0; i < accountamount; ++i) {
+                if (account[i].accountid == loggedInAccountID) {
+                    for (int j = 0; j < account[i].amount; ++j) {
+                        printf("Product: %s | Day: %s | Quantity: %d\n",
+                               stock[account[i].id[j] - 1].name, daysOfWeek[account[i].day[j]], account[i].quantity[j]);
+                        found = 1;
+                    }
+                }
+            }
 
-    // Convert day index to day name directly
-    const char* dayName;
-    switch (day) {
-        case 0: dayName = "Sunday"; break;
-        case 1: dayName = "Monday"; break;
-        case 2: dayName = "Tuesday"; break;
-        case 3: dayName = "Wednesday"; break;
-        case 4: dayName = "Thursday"; break;
-        case 5: dayName = "Friday"; break;
-        case 6: dayName = "Saturday"; break;
-        default: dayName = "Unknown"; break;
-    }
-
-    // Prepare the log message
-    char logDetails[1024] = "";
-    sprintf(logDetails, "Scheduled Purchase for %s: ", dayName);
-
-    for (int i = 0; i < icart; ++i) {
-        account[accountamount].day[i] = day;
-        account[accountamount].id[i] = stock[cart[i]].id;
-        account[accountamount].quantity[i] = cartamount[i];
-        char temp[256];
-        sprintf(temp, "%s x%d, ", stock[cart[i]].name, cartamount[i]);
-        strcat(logDetails, temp);
-    }
-
-    account[accountamount].amount = icart;
-    account[accountamount].accountid = accountamount + 1;
-    accountamount++;
-    clearcart();
-
-    printf("Schedule saved successfully for %s!\n", dayName);
-    writeLog("Scheduled Purchase", logDetails);
-    sleep(2);
-
-
-        } else if (choice == 4) { // View Schedule
-            viewSchedule();
+            if (!found) printf("No schedules found for this account.\n");
             printf("\nPress any key to return...");
             universalscanf(0);
+        } 
+        else if (choice == 4) { // Edit Schedule
+            system("cls");
+            printf("=====================\n");
+            printf("Edit Schedule (Account ID: %d)\n", loggedInAccountID);
+            printf("================//////\n\n");
 
-        } else if (choice == 5) { // Edit Schedule
-            editSchedule();
+            const char *daysOfWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+            int found = 0;
 
-        } else if (choice == 0) { // Exit
-            printf("Exiting cart management...\n");
-            sleep(2);
-            break;
+            for (int i = 0; i < accountamount; ++i) {
+                if (account[i].accountid == loggedInAccountID) {
+                    for (int j = 0; j < account[i].amount; ++j) {
+                        printf("[%d] Product: %s | Day: %s | Quantity: %d\n", j + 1,
+                               stock[account[i].id[j] - 1].name, daysOfWeek[account[i].day[j]], account[i].quantity[j]);
+                        found = 1;
+                    }
+                }
+            }
 
-        } else {
+            if (!found) {
+                printf("No schedules found for this account.\n");
+                printf("\nPress any key to return...");
+                universalscanf(0);
+                continue;
+            }
+
+            printf("\nEnter the index of the schedule to edit [0 to cancel]: ");
+            int index = universalscanf(accountamount);
+            if (index == 0) continue;
+
+            --index; // Adjust for 0-based indexing
+            printf("Enter new day [0=Sunday, 6=Saturday]: ");
+            account[loggedInAccountID].day[index] = universalscanf(6);
+
+            printf("Enter new quantity [1-%d]: ", stock[account[loggedInAccountID].id[index] - 1].quantity);
+            account[loggedInAccountID].quantity[index] = universalscanf(stock[account[loggedInAccountID].id[index] - 1].quantity);
+
+            saveSchedule();
+            printf("Schedule updated successfully!\n");
+            sleep(1);
+        } 
+        else if (choice == 5) { // Exit
+            if (icart == 0) return;
+            else {
+                printf("If you leave, all cart will be removed!\n");
+                if (confirm() == 0) break;
+                else {
+                    clearcart();
+                    break;
+                }
+            }
+        } 
+        else {
             printf("Invalid choice! Please try again.\n");
-            sleep(2);
         }
     }
 }
+
+
 
 int couponCount = 0; // Tracks the number of coupons loaded
 
@@ -1796,7 +1990,8 @@ void customerPage()
         printf("Make your choice:\n");
         printf("[1] Buy Now\n");
         printf("[2] Buy Later\n");
-        printf("[3] Exit to Main Menu\n\n");
+        printf("[3] Search\n");
+        printf("[0] Exit to Main Menu\n\n");
         printf("Please make your choice: ");
         scanf("%d", &choice);
         switch (choice)
@@ -1805,11 +2000,13 @@ void customerPage()
             buyNow();
             break;
         case 2:
-            buylater();
+            buylater(1);
             break;
         case 3:
+            customersearch();
+            break;
+        case 0:
             system("cls");
-            mainmenu();
             return;
             break;
         default:
@@ -1818,7 +2015,65 @@ void customerPage()
     }
 }
 
-void mainmenu() {
+void autoBuy(int loggedInAccountID) {
+    int purchaseCount = 0; // Tracks the number of items auto-purchased
+
+    // Loop through all accounts
+    for (int i = 0; i < accountamount; ++i) {
+        // Check if the schedule belongs to the current logged-in user
+        if (account[i].accountid == loggedInAccountID) {
+            for (int j = 0; j < account[i].amount; ++j) {
+                int productID = account[i].id[j];     // Product ID
+                int quantity = account[i].quantity[j]; // Quantity to purchase
+
+                // Find the product in stock
+                for (int k = 0; k < amount; ++k) {
+                    if (stock[k].id == productID) {
+                        // Check if stock is sufficient
+                        if (stock[k].quantity >= quantity) {
+                            stock[k].quantity -= quantity; // Deduct stock
+                            printf("✅ Auto-purchased %d x %s.\n", quantity, stock[k].name);
+
+                            // Deduct schedule quantity
+                            account[i].quantity[j] = 0; 
+                            purchaseCount++;
+                        } else {
+                            printf("⚠️ Not enough stock for %s. Reducing purchase to available quantity.\n", stock[k].name);
+                            account[i].quantity[j] -= stock[k].quantity; // Update remaining quantity in schedule
+                            printf("Remaining quantity in schedule: %d\n", account[i].quantity[j]);
+
+                            purchaseCount += stock[k].quantity;
+                            stock[k].quantity = 0; // Stock is exhausted
+                        }
+                    }
+                }
+
+                // Remove schedule entry if quantity is zero
+                if (account[i].quantity[j] <= 0) {
+                    for (int l = j; l < account[i].amount - 1; ++l) {
+                        account[i].id[l] = account[i].id[l + 1];
+                        account[i].quantity[l] = account[i].quantity[l + 1];
+                        account[i].day[l] = account[i].day[l + 1];
+                    }
+                    account[i].amount--;
+                    j--; // Adjust index after removal
+                }
+            }
+        }
+    }
+
+    if (purchaseCount > 0) {
+        savefile();      // Save updated stock data
+        saveSchedule();  // Save updated schedule data
+        printf("[Auto Buy] Successfully processed %d scheduled purchases for Account ID: %d.\n", purchaseCount, loggedInAccountID);
+    } else {
+        printf("[Auto Buy] No valid schedules to process for Account ID: %d.\n", loggedInAccountID);
+    }
+}
+
+
+void mainmenu(int loggedInAccountID) {
+    autoBuy(loggedInAccountID); // Perform auto-buy for the current user
     printmainmenu();
 
     int choice;
@@ -1829,19 +2084,21 @@ void mainmenu() {
 
         switch (choice) {
         case 1: // Customer page
-            customerPage();
-            printmainmenu(); // Re-print menu after returning
+            buylater(loggedInAccountID);
+            printmainmenu();
             break;
 
         case 2: // Owner page
             ownerscreen();
-            printmainmenu(); // Re-print menu after returning
+            printmainmenu();
             break;
 
         case 3: // Exit
             printf("=====================\n");
             printf("Exiting program!\n");
             printf("================////\n");
+            savefile(); // Save stock data before exiting
+            saveSchedule(); // Save schedule data before exiting
             exit(0);
             break;
 
@@ -1851,12 +2108,22 @@ void mainmenu() {
     }
 }
 
+void login(){
+    char alogin[100];
+    char plogin[100];
+    printf("Login: ");
+    scanf("%s",alogin);
+    
+    printf("Password: ");
+    scanf("%s",plogin);
+}
 
-int main(void)
-{
-    clearcart();
-    readfile();
-    readCoupons();
+int main() {
+    readfile();      // Load stock data
+    readSchedule();  // Load saved schedules
+    saveSchedule();
+    mainmenu(1);      // Enter the main menu
 
-    mainmenu();
+    saveSchedule();  // Save schedules on program exit
+    return 0;
 }
