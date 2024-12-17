@@ -8,8 +8,6 @@
 int second,minute,hour,day,month,year;
 struct account
 {
-    char username[1000];
-    char password[1000];
     int id[ARRAYVALUE];
     int quantity[ARRAYVALUE];
     int day[ARRAYVALUE];
@@ -86,7 +84,10 @@ int maxvalue(int amount ,int array[]){
 
 int universalscanf(int max){
     int choice=0,min=0;
-    if(max==0) max = 999;
+    if(max==0){
+        max = 99999;
+        min = -99999;
+    }
     else if(max== -1){
         max = 1;
         min=0;
@@ -1556,9 +1557,10 @@ void buylater(int loggedInAccountID) {
         printf("Make your choice:\n");
         printf("[1] Add Cart\n");
         printf("[2] Edit Cart\n");
-        printf("[3] View Schedule\n");
-        printf("[4] Edit Schedule\n");
-        printf("[5] Exit\n\n");
+        printf("[3] Set Schedule\n");
+        printf("[4] View Schedule\n");
+        printf("[5] Edit Schedule\n");
+        printf("[0] Exit\n\n");
         printf("Please make your choice: ");
         scanf("%d", &choice);
 
@@ -1664,7 +1666,44 @@ void buylater(int loggedInAccountID) {
                 }
             }
         } 
-        else if (choice == 3) { // View Schedule
+        else if (choice == 3) { // Set Schedule
+            if (icart == 0) {
+                printf("No items in the cart to set as schedule.\n");
+                printf("\nPress any key to return...");
+                universalscanf(0);
+                continue;
+            }
+
+            printf("\nSetting cart items as schedule...\n");
+            for (int i = 0; i < icart; ++i) {
+                int idx = -1;
+                for (int j = 0; j < accountamount; ++j) {
+                    if (account[j].accountid == loggedInAccountID) {
+                        idx = j;
+                        break;
+                    }
+                }
+                if (idx == -1) { // If no account entry exists, create a new one
+                    idx = accountamount++;
+                    account[idx].accountid = loggedInAccountID;
+                    account[idx].amount = 0;
+                }
+
+                int currentAmount = account[idx].amount;
+                account[idx].id[currentAmount] = stock[cart[i]].id;
+                account[idx].quantity[currentAmount] = cartamount[i];
+                printf("Enter day for Product %s [0=Sunday, 6=Saturday]: ", stock[cart[i]].name);
+                account[idx].day[currentAmount] = universalscanf(6);
+                account[idx].amount++;
+            }
+
+            clearcart();
+            saveSchedule();
+            printf("Schedule set successfully!\n");
+            printf("\nPress any key to continue...");
+            universalscanf(0);
+        }
+        else if (choice == 4) { // View Schedule
             system("cls");
             printf("=====================\n");
             printf("View Schedule (Account ID: %d)\n", loggedInAccountID);
@@ -1687,7 +1726,7 @@ void buylater(int loggedInAccountID) {
             printf("\nPress any key to return...");
             universalscanf(0);
         } 
-        else if (choice == 4) { // Edit Schedule
+        else if (choice == 5) { // Edit Schedule
             system("cls");
             printf("=====================\n");
             printf("Edit Schedule (Account ID: %d)\n", loggedInAccountID);
@@ -1728,7 +1767,7 @@ void buylater(int loggedInAccountID) {
             printf("Schedule updated successfully!\n");
             sleep(1);
         } 
-        else if (choice == 5) { // Exit
+        else if (choice == 0) { // Exit
             if (icart == 0) return;
             else {
                 printf("If you leave, all cart will be removed!\n");
@@ -1744,7 +1783,6 @@ void buylater(int loggedInAccountID) {
         }
     }
 }
-
 
 
 int couponCount = 0; // Tracks the number of coupons loaded
@@ -2000,7 +2038,7 @@ void customerPage()
             buyNow();
             break;
         case 2:
-            buylater(1);
+            buylater(loggedInAccountID);
             break;
         case 3:
             customersearch();
@@ -2084,7 +2122,7 @@ void mainmenu(int loggedInAccountID) {
 
         switch (choice) {
         case 1: // Customer page
-            buylater(loggedInAccountID);
+            customerPage();
             printmainmenu();
             break;
 
@@ -2109,10 +2147,22 @@ void mainmenu(int loggedInAccountID) {
 }
 
 void login(){
-    char alogin[100];
-    char plogin[100];
+    char alogin[1000];
+    char plogin[1000];
     printf("Login: ");
     scanf("%s",alogin);
+    
+    printf("Password: ");
+    scanf("%s",plogin);
+}
+
+void createaccount(){
+    char alogin[1000];
+    char plogin[1000];
+    printf("Login: ");
+    scanf("%s",alogin);
+
+
     
     printf("Password: ");
     scanf("%s",plogin);
