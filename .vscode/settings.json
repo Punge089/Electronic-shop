@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "time.h": "c",
+        "customer_operations.h": "c",
+        "owner_operations.h": "c",
+        "stock_management.h": "c",
+        "stdlib.h": "c",
+        "string.h": "c"
+    }
+}
