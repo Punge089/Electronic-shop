@@ -282,7 +282,7 @@ void readfile()
 void savefile()
 {
     FILE *stockfile;
-    stockfile = fopen("stocksave.csv", "w");
+    stockfile = fopen("stock.csv", "w");
 
     fprintf(stockfile, "Class,ID,Name,Quantity,Price,Description,Threshold,Max\n");
 
@@ -531,6 +531,7 @@ void addstock()
         switch (a)
         {
         case 1: // confirm
+        savefile();
             // Log the new stock details
             {
                 char logDetails[512];
@@ -629,6 +630,7 @@ void deleteproduct()
                     }
                     --amount;
                     deleteproduct();  // Recursively call to allow for continuous deletion
+                    savefile();
                     return;
                     break;
 
@@ -700,7 +702,7 @@ void editproduct()
             --edit;
 
             while (1)
-            {
+            {   savefile();
                 system("cls");
                 printf("=====================\n");
                 printheader();
@@ -801,6 +803,7 @@ void editproduct()
                             break;
 
                         case 8:
+                        savefile();
                             editproduct();
                             return;
                             break;
