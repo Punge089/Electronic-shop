@@ -748,7 +748,7 @@ void manageCoupons() {
         system("cls");
 
         // Display the list of coupons at the top of the menu
-        printf("\n--- List of Coupons ---\n");
+        printf("\n============== List of Coupons ==============\n");
         file = fopen(filename, "r");
         if (file == NULL) {
             printf("No coupons found or file could not be opened.\n\n");
@@ -1389,13 +1389,15 @@ void buyNow() {
     }
 }
 
+void mainmenu();
+
 void customerPage()
 {
     int choice;
     while (1)
     {
         system("cls");
-        printf("=====================\n");
+        printf("\n=====================\n");
         printf("Customer Page\n");
         printf("================////\n\n");
         printf("Make your choice:\n");
@@ -1413,10 +1415,10 @@ void customerPage()
             buylater();
             break;
         case 3:
-            printf("Returning to Main Menu...\n");
-            sleep(2);
             system("cls");
+            mainmenu();
             return;
+            break;
         default:
             printf("Invalid choice! Please try again.\n");
         }
