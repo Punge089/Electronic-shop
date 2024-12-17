@@ -1,0 +1,18 @@
+
+[2024-12-17 18:04:58] Report: Coupon CPE-Xgtd added
+[2024-12-17 18:05:09] Report: Coupon CPE-Xgtd deleted
+[2024-12-17 18:05:35] Report: Daily Summary
+[2024-12-17 18:06:30] Customer Purchase: Items: Webcam x3 (6300.00), 
+[2024-12-17 18:13:22] Report: Price for product ID 4 changed from 7000.00 to 7200.00
+[2024-12-17 18:16:30] Report: New stock added - ID: 31, Name: 'Pun', Class: 'A', Max: 23, Quantity: 21, Price: 2333.00, Threshold: 20.00
+[2024-12-17 18:16:40] Report: Name for product ID 31 changed from 'Pun' to 'punge'
+[2024-12-17 18:16:47] Report: Description for product ID 31 changed from 'wd' to 'Green'
+[2024-12-17 18:16:52] Report: Quantity for product ID 31 changed from 21 to 12
+[2024-12-17 18:16:57] Report: Max for product ID 31 changed from 23 to 18
+[2024-12-17 18:17:04] Report: Product ID 31 named 'punge' is being deleted
+[2024-12-17 18:22:43] Report: Daily Summary
+[2024-12-17 19:05:11] Stock Restock: Desktop PC
+[2024-12-17 19:08:18] Stock Restock: Smartphone
+[2024-12-17 19:36:23] Report: Quantity for product ID 30 changed from 41 to 40
+[2024-12-17 19:37:25] Report: Quantity for product ID 30 changed from 41 to 40
+[2024-12-17 19:45:44] Report: Quantity for product ID 30 changed from 41 to 40
