@@ -4,7 +4,11 @@
 #include <time.h>
 #include <math.h>
 #include <unistd.h>
+
+
 #define ARRAYVALUE 1000
+
+
 int second,minute,hour,day,month,year;
 struct account
 {
@@ -16,7 +20,29 @@ struct account
 
 }account[ARRAYVALUE];
 
-int loggedInAccountID = 1;
+
+
+
+
+
+
+struct login {
+    char username[1000];
+    char password[1000];
+    int id; // Account ID
+} loginAccounts[ARRAYVALUE];
+
+int loginAmount = 0; // Tracks the number of accounts
+int loggedInAccountID = -1; // Global variable to store the logged-in user's ID
+int isAdmin = 0; // Flag for admin access
+
+
+
+
+
+
+
+
 int accountamount;
 
 struct stock
@@ -50,6 +76,236 @@ time_t now;
 
 double totalIncome = 0.0;
 char logDetails[256]; // Allocate enough space for the formatted string
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void readLoginFile() {
+    FILE *file = fopen("accounts.csv", "r");
+    if (!file) {
+        printf("No accounts file found. Starting fresh.\n");
+        return;
+    }
+
+    char buffer[256];
+    fgets(buffer, sizeof(buffer), file); // Skip the header line
+
+    loginAmount = 0; // Reset account count
+    while (fscanf(file, "%[^,],%[^,],%d\n",
+                  loginAccounts[loginAmount].username,
+                  loginAccounts[loginAmount].password,
+                  &loginAccounts[loginAmount].id) == 3) {
+        loginAmount++;
+    }
+
+    fclose(file);
+    printf("[Accounts] Accounts loaded successfully!\n");
+}
+
+
+
+
+
+void saveLoginFile() {
+    FILE *file = fopen("accounts.csv", "w");
+    if (!file) {
+        printf("Error: Cannot open accounts file for saving.\n");
+        return;
+    }
+
+    // Write the file header
+    fprintf(file, "Username,Password,ID\n");
+
+    // Write all accounts to the file
+    for (int i = 0; i < loginAmount; i++) {
+        fprintf(file, "%s,%s,%d\n", loginAccounts[i].username, loginAccounts[i].password, loginAccounts[i].id);
+    }
+
+    fclose(file);
+    printf("[Accounts] Accounts saved successfully!\n");
+}
+
+
+
+
+
+
+
+
+int login() {
+    char username[1000], password[1000];
+    system("cls");
+    printf("=====================\n");
+    printf("Login\n");
+    printf("================////\n\n");
+
+    printf("Enter username: ");
+    scanf(" %[^\n]", username);
+    printf("Enter password: ");
+    scanf(" %[^\n]", password);
+
+    // Admin Check
+    if (strcmp(username, "admin") == 0 && strcmp(password, "est") == 0) {
+        isAdmin = 1;  // Admin access granted
+        loggedInAccountID = 0; // Admin ID
+        printf("\nLogin successful! Welcome, Admin.\n");
+        sleep(1);
+        return 1;
+    }
+
+    // Check Regular User Accounts
+    for (int i = 0; i < loginAmount; i++) {
+        if (strcmp(loginAccounts[i].username, username) == 0 &&
+            strcmp(loginAccounts[i].password, password) == 0) {
+
+            loggedInAccountID = loginAccounts[i].id;
+            isAdmin = 0; // Regular user
+            printf("\nLogin successful! Welcome, %s.\n", username);
+            sleep(1);
+            return 1;
+        }
+    }
+
+    printf("\nInvalid credentials! Try again.\n");
+    sleep(1);
+    return 0;
+}
+
+
+
+
+
+
+
+void loginMenu() {
+    int choice;
+    readLoginFile();
+
+    while (1) {
+        system("cls");
+        printf("=====================\n");
+        printf("Welcome\n");
+        printf("================////\n\n");
+
+        printf("Make your choice:\n");
+        printf("[1] Login\n");
+        printf("[2] Create Account\n");
+        printf("[0] Exit\n\n");
+        printf("Please make your choice: ");
+        choice = universalscanf(2);
+
+        if (choice == 1) {
+            if (login()) break; // Successful login
+        } else if (choice == 2) {
+            createAccount();
+        } else if (choice == 0) {
+            printf("\nExiting program...\n");
+            sleep(1);
+            exit(0);
+        } else {
+            printf("\nInvalid choice! Try again.\n");
+            sleep(1);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+void createAccount() {
+    char username[1000], password[1000];
+    int isTaken = 0;
+
+    system("cls");
+    printf("=====================\n");
+    printf("Create Account\n");
+    printf("================////\n\n");
+
+    while (1) { 
+        isTaken = 0; // Reset flag for each attempt
+
+        // Prompt for a username
+        printf("Enter a username: ");
+        scanf(" %[^\n]", username);
+
+        // Check if the username is 'admin'
+        if (strcmp(username, "admin") == 0) {
+            printf("Error: 'admin' is a reserved username. Please choose another username.\n");
+            continue;
+        }
+
+        // Check if the username is already taken
+        for (int i = 0; i < loginAmount; i++) {
+            if (strcmp(loginAccounts[i].username, username) == 0) {
+                printf("Username '%s' is already taken! Please try a different username.\n", username);
+                isTaken = 1; // Username is already in use
+                break;
+            }
+        }
+
+        if (!isTaken) break; // If username is not taken, proceed to password
+    }
+
+    // Prompt for a password
+    printf("Enter a password: ");
+    scanf(" %[^\n]", password);
+
+    // Assign the new account to the struct
+    strcpy(loginAccounts[loginAmount].username, username);
+    strcpy(loginAccounts[loginAmount].password, password);
+    loginAccounts[loginAmount].id = loginAmount + 1; // Incremental ID starts at 1
+
+    loginAmount++; // Increment account count
+
+    // Save the new account to file
+    saveLoginFile();
+
+    printf("\nAccount created successfully! Your ID is %d.\n", loginAccounts[loginAmount - 1].id);
+    sleep(1);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void updatetime(){
     time_t t = time(NULL);
@@ -158,7 +414,7 @@ void readSchedule() {
     }
 
     fclose(file);
-    printf("[Schedule] Schedule loaded successfully!\n");
+
 }
 
 
@@ -985,7 +1241,7 @@ void editproduct()
                             scanf(" %c", &chrtemp);
                             while (1)
                             {
-                                if (chrtemp != 'A')
+                                if (chrtemp != 'A' && chrtemp != 'E' && chrtemp != 'G')
                                 {
                                     printf("Please make invalid choice!\n");
                                     printf("Please make your choice:");
@@ -1026,7 +1282,7 @@ void editproduct()
 
                         case 5:
                             printf("New description: ");
-                            scanf("%s", &strtemp);
+                            scanf(" %[^\n]", &strtemp);
                             // Format the log message
                             sprintf(logDetails, "Description for product ID %d changed from '%s' to '%s'", stock[edit].id, stock[edit].description, strtemp);
                             writeLog("Report", logDetails);
@@ -1249,7 +1505,6 @@ void saveSchedule() {
     }
 
     fclose(file);
-    printf("[Schedule] Schedule saved successfully!\n");
 }
 
 
@@ -2110,70 +2365,50 @@ void autoBuy(int loggedInAccountID) {
 }
 
 
-void mainmenu(int loggedInAccountID) {
-    autoBuy(loggedInAccountID); // Perform auto-buy for the current user
-    printmainmenu();
-
+void mainmenu() {
     int choice;
-
+    autoBuy(loggedInAccountID);
     while (1) {
-        printf("\nPlease make your choice: ");
+        system("cls");
+        printf("=====================\n");
+        printf("Main Menu Acount ID:%d\n",loggedInAccountID);
+        printf("================////\n\n");
+
+        printf("Make your choice:\n");
+        printf("[1] Customer Page\n");
+        if (isAdmin) {
+            printf("[2] Owner Page\n");
+        }
+        printf("[0] Exit\n\n");
+        printf("Please make your choice: ");
         scanf("%d", &choice);
 
-        switch (choice) {
-        case 1: // Customer page
-            customerPage();
-            printmainmenu();
-            break;
-
-        case 2: // Owner page
-            ownerscreen();
-            printmainmenu();
-            break;
-
-        case 3: // Exit
-            printf("=====================\n");
-            printf("Exiting program!\n");
-            printf("================////\n");
-            savefile(); // Save stock data before exiting
-            saveSchedule(); // Save schedule data before exiting
+        if (choice == 2 && isAdmin) { 
+            ownerscreen(); // Admin-only access
+        } 
+        else if (choice == 1) {
+            customerPage(); // Accessible to all
+        } 
+        else if (choice == 0) {
+            printf("\nExiting program...\n");
+            saveSchedule();
+            savefile();
+            sleep(1);
             exit(0);
-            break;
-
-        default:
-            printf("Invalid choice! Please try again.\n");
+        } 
+        else {
+            printf("\nInvalid choice! Try again.\n");
+            sleep(1);
         }
     }
 }
 
-void login(){
-    char alogin[1000];
-    char plogin[1000];
-    printf("Login: ");
-    scanf("%s",alogin);
-    
-    printf("Password: ");
-    scanf("%s",plogin);
-}
-
-void createaccount(){
-    char alogin[1000];
-    char plogin[1000];
-    printf("Login: ");
-    scanf("%s",alogin);
-
-
-    
-    printf("Password: ");
-    scanf("%s",plogin);
-}
-
 int main() {
     readfile();      // Load stock data
-    readSchedule();  // Load saved schedules
-    saveSchedule();
-    mainmenu(1);      // Enter the main menu
+    readSchedule();  // Load schedules
+    loginMenu();     // Login or create account
 
-    saveSchedule();  // Save schedules on program exit
+    mainmenu();      // Display appropriate main menu
     return 0;
 }
+
