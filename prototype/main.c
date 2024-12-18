@@ -1747,15 +1747,12 @@ void ownerscreen() {
                 } else {
                     char logLine[500];
                     while (fgets(logLine, sizeof(logLine), logFile)) {
-                        printf("%s", logLine);
+                        printf(" %s", logLine);
                     }
                     fclose(logFile);
                 }
                 printf("\nPress [0] to return: ");
-                int returnChoice;
-                while (returnChoice != 0) {
-                    scanf("%d", &returnChoice);
-                }
+                universalscanf(0);
                 printownerscreen();
                 break;
             case 5: // Check Low Stock & Restock
